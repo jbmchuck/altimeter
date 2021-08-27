@@ -7,4 +7,5 @@ class SupportResourceSpec(AWSResourceSpec):
 
     service_name = "support"
     scan_granularity = ScanGranularity.ACCOUNT
-    region_whitelist = ("us-east-1",)
+    # region_whitelist = ("us-east-1",)
+    region_whitelist = ("eu-west-1",)
