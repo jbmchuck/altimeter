@@ -65,6 +65,7 @@ def aws2neptune_lpg(scan_id: str, config: AWSConfig, muxer: AWSScanMuxer) -> Non
         ssl=bool(config.neptune.ssl),
         auth_mode=str(config.neptune.auth_mode),
     )
+    
     neptune_client = AltimeterNeptuneClient(max_age_min=1440, neptune_endpoint=endpoint)
     neptune_client.write_to_neptune_lpg(graph, scan_id)
     logger.info(LogEvent.NeptuneGremlinWriteEnd)
@@ -136,7 +137,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("model", type=str, nargs="?")
     parser.add_argument("config", type=str, nargs="?")
     args_ns = parser.parse_args(argv)
-
+  
     if args_ns.model is None:
         print("You need to specify the data model desired for this run (RDF or LPG).")
         sys.exit()
@@ -148,33 +149,46 @@ def main(argv: Optional[List[str]] = None) -> int:
         "/home/ec2-user/graph_notebook_config.json" if args_ns.config is None else args_ns.config
     )
 
-    with open(config_path) as f:
-        config_dict = json.load(f)
+    # with open(config_path) as f:
+    #     config_dict = json.load(f)
+
+    config = AWSConfig.from_path(config_path)
+    print(f"config: {config}")
+    endpoint = NeptuneEndpoint(
+        host=config.neptune.host,
+        port=config.neptune.port,
+        region=config.neptune.region,
+        ssl=bool(config.neptune.ssl),
+        auth_mode=str(config.neptune.auth_mode),
+    )
+    print(f"neptune endpoint {endpoint}")
 
     current_account = boto3.client("sts").get_caller_identity().get("Account")
     current_region = boto3.session.Session().region_name
 
-    config = AWSConfig(
-        artifact_path="./altimeter_runs",
-        pruner_max_age_min=4320,
-        graph_name="alti",
-        concurrency=ConcurrencyConfig(max_account_scan_threads=1, max_svc_scan_threads=64,),
-        scan=ScanConfig(
-            accounts=[current_account],
-            regions=[current_region],
-            scan_sub_accounts=False,
-            preferred_account_scan_regions=[current_region],
-        ),
-        neptune=NeptuneConfig(
-            host=config_dict["host"],
-            port=int(config_dict["port"]),
-            auth_mode=config_dict["auth_mode"],
-            iam_credentials_provider_type=config_dict["iam_credentials_provider_type"],
-            ssl=config_dict["ssl"],
-            region=config_dict["aws_region"],
-            use_lpg=bool(args_ns.model.lower() == "lpg"),
-        ),
-    )
+    
+    # config = AWSConfig(
+    #     artifact_path="./altimeter_runs",
+    #     pruner_max_age_min=4320,
+    #     graph_name="alti",
+    #     concurrency=ConcurrencyConfig(max_account_scan_threads=1, max_svc_scan_threads=64,),
+    #     scan=ScanConfig(
+    #         accounts=[current_account],
+    #         regions=[current_region],
+    #         scan_sub_accounts=False,
+    #         preferred_account_scan_regions=[current_region],
+    #     ),
+    #     neptune=NeptuneConfig(
+    #         host=config_dict["host"],
+    #         port=int(config_dict["port"]),
+    #         auth_mode=config_dict["auth_mode"],
+    #         iam_credentials_provider_type=config_dict["iam_credentials_provider_type"],
+    #         ssl=config_dict["ssl"],
+    #         region=config_dict["aws_region"],
+    #         use_lpg=bool(args_ns.model.lower() == "lpg"),
+    #     ),
+    # )
+    
 
     scan_id = generate_scan_id()
     muxer = LocalAWSScanMuxer(scan_id=scan_id, config=config)
