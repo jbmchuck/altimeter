@@ -108,7 +108,9 @@ class NeptuneEndpoint:
         """
         if ssl:
             return f"wss://{self.get_endpoint_str()}/gremlin"
-        return f"ws://{self.get_endpoint_str()}/gremlin"
+
+        return  f"ws://{self.get_endpoint_str()}/gremlin"
+
 
 
 def discover_neptune_endpoint() -> NeptuneEndpoint:
